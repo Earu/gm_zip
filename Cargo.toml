@@ -10,3 +10,4 @@ crate-type = ["cdylib"]
 [dependencies]
 gmod = { version = "*", default-features = false, features = ["gmcl"] }
 zip = "0.5.13"
+glob = "0.3.0"
