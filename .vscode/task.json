@@ -1,0 +1,19 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "CompileWin64",
+            "command": "cargo",
+            "args": ["build"],
+            "problemMatcher": []
+        },
+        {
+            "label": "CopyModuleWin64",
+            "dependsOn": "CompileWin64",
+            "type": "shell",
+            "command": "copy",
+            "args": ["target\\debug\\gm_zip.dll", "F:\\SteamLibrary\\steamapps\\common\\GarrysMod\\garrysmod\\lua\bin\\gmsv_zip_win64.dll"],
+            "problemMatcher": []
+        }
+    ]
+}
