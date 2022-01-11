@@ -4,7 +4,17 @@ Create archives of files within Garry's Mod.
 **Note: The scope of this module only works accross the gmod installation files e.g from GarrysMod/garrysmod/. Anything out of this scope is not supported.**
 
 ## Examples
-Simple archiving:
+Folder archiving:
+```lua
+require("zip")
+
+local delete_original_folder = true
+Zip("folder.zip", "path/to/folder", delete_original_folder)
+
+Zip("folder.zip", "path/to/folder2") -- not providing the 3rd argument (or setting it to false) will keep the original folder
+```
+
+Simple file archiving:
 ```lua
 require("zip")
 
@@ -16,11 +26,11 @@ Change the paths in the archive:
 require("zip")
 
 Zip("addon_send.zip", {
-  { Path = "lua/send.txt", ArchivePath = "send.txt" }
+  { Path = "lua/send.txt", ArchivePath = "send.txt" } -- Path is the real path to the file, ArchivePath is the path used within the archive
 })
 ```
 
-Advanced archiving:
+Advanced file archiving:
 ```lua
 require("zip")
 
