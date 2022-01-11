@@ -8,7 +8,7 @@ Simple archiving:
 ```lua
 require("zip")
 
-Zip("archive.zip", "lua/send.txt")
+Zip("archive.zip", { "lua/send.txt" })
 ```
 
 Advanced archiving:
