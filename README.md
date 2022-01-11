@@ -11,6 +11,15 @@ require("zip")
 Zip("archive.zip", { "lua/send.txt" })
 ```
 
+Change the paths in the archive:
+```lua
+require("zip")
+
+Zip("addon_send.zip", {
+  { Path = "lua/send.txt", ArchivePath = "send.txt" }
+})
+```
+
 Advanced archiving:
 ```lua
 require("zip")
@@ -19,7 +28,7 @@ local function get_lua_files(res, dir)
     res = res or {}
     dir = dir or "lua"
 
-    local files, dirs = file.Find(dir .. "/*", "GAME")
+    local files, dirs = file.Find(dir .. "/*", "MOD")
     for _, f in pairs(files or {}) do
         if not f:EndsWith(".lua") then continue end
         table.insert(res, dir .. "/" .. f)
@@ -34,14 +43,6 @@ end
 
 local lua_files = get_lua_files()
 Zip("my_lua_files.zip", lua_files)
-```
-Change the paths in the archive:
-```lua
-require("zip")
-
-Zip("addon_send.zip", {
-  { Path = "lua/send.txt", ArchivePath = "send.txt" }
-})
 ```
 
 ## Compiling

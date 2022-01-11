@@ -44,8 +44,6 @@ unsafe fn zip(lua: gmod::lua::State) -> i32 {
             match lua.get_type(-1) {
                 "string" => {
                     let relative_path = lua.check_string(-1);
-                    lua.pop();
-
                     paths.push(ArchiveFile {
                         actual_path: {
                             let root_path = Path::new(&base_path);
@@ -90,7 +88,7 @@ unsafe fn zip(lua: gmod::lua::State) -> i32 {
         let file = File::create(output)?;
         let mut zip = ZipWriter::new(file);
 
-        let opts = FileOptions::default();
+        let opts = FileOptions::default().large_file(true);
         for archived_file in archived_files {
             if archived_file.actual_path.components().into_iter().any(|c| c == Component::ParentDir) {
                 return Err(Error::new(ErrorKind::Other, "path transversal"));
@@ -98,7 +96,8 @@ unsafe fn zip(lua: gmod::lua::State) -> i32 {
                 match archived_file.actual_path.to_str() {
                     Some(path_str) => {
                         zip.start_file(archived_file.archive_path.as_str(), opts)?;
-                        copy(&mut File::open(path_str)?, &mut zip)?;
+                        let file = &mut File::open(path_str)?;
+                        copy(file, &mut zip)?;
                     }
                     None => {
                         return Err(Error::new(ErrorKind::Other, "path contains invalid UTF-8"));
