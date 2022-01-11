@@ -95,9 +95,12 @@ unsafe fn zip(lua: gmod::lua::State) -> i32 {
             } else {
                 match archived_file.actual_path.to_str() {
                     Some(path_str) => {
-                        zip.start_file(archived_file.archive_path.as_str(), opts)?;
-                        let file = &mut File::open(path_str)?;
-                        copy(file, &mut zip)?;
+                        let target_path = Path::new(path_str);
+                        if target_path.exists() {
+                            zip.start_file(archived_file.archive_path.as_str(), opts)?;
+                            let file = &mut File::open(path_str)?;
+                            copy(file, &mut zip)?;
+                        }
                     }
                     None => {
                         return Err(Error::new(ErrorKind::Other, "path contains invalid UTF-8"));
