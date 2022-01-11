@@ -4,8 +4,14 @@ Create archives of files within Garry's Mod.
 **Note: The scope of this module only works accross the gmod installation files e.g from GarrysMod/garrysmod/. Anything out of this scope is not supported.**
 
 ## Examples
-
 Simple archiving:
+```lua
+require("zip")
+
+Zip("archive.zip", "lua/send.txt")
+```
+
+Advanced archiving:
 ```lua
 require("zip")
 
