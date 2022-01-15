@@ -1,6 +1,6 @@
 #![feature(c_unwind)]
 
-use std::{path::{PathBuf, Path, Component}, fs::File, io::{copy, Error, ErrorKind}};
+use std::{path::{PathBuf, Path, Component}, fs::{File, self}, io::{copy, Error, ErrorKind}};
 use zip::{ZipWriter, write::FileOptions};
 use glob::glob;
 
@@ -195,11 +195,105 @@ unsafe fn zip(lua: gmod::lua::State) -> i32 {
     }
 }
 
+fn unzip_archive(input_path: &PathBuf, output_path: Option<PathBuf>, delete_original: bool) -> Result<(), std::io::Error> {
+    let file = File::open(input_path)?;
+    let mut archive = zip::ZipArchive::new(file)?;
+    let base_path = match output_path {
+        None => {
+            let mut extension = String::from(".");
+            extension.push_str(input_path.extension().unwrap().to_str().unwrap());
+            PathBuf::from(input_path.to_str().unwrap().replace(extension.as_str(), ""))
+        },
+        Some(path) => path
+    };
+
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i)?;
+        let outpath = match file.enclosed_name() {
+            Some(path) => base_path.join(path.to_owned()),
+            None => continue,
+        };
+
+        let comment = file.comment();
+        if !comment.is_empty() {
+            println!("File {} comment: {}", i, comment);
+        }
+
+        if (&*file.name()).ends_with('/') {
+            fs::create_dir_all(&outpath)?;
+        } else {
+            if let Some(p) = outpath.parent() {
+                if !p.exists() {
+                    fs::create_dir_all(&p)?;
+                }
+            }
+            let mut outfile = fs::File::create(&outpath)?;
+            copy(&mut file, &mut outfile)?;
+        }
+
+        // Get and Set permissions
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            if let Some(mode) = file.unix_mode() {
+                fs::set_permissions(&outpath, fs::Permissions::from_mode(mode))?;
+            }
+        }
+    }
+
+    if delete_original {
+        std::fs::remove_file(input_path)?;
+    }
+
+    Ok(())
+}
+
+#[lua_function]
+unsafe fn unzip(lua: gmod::lua::State) -> i32 {
+    let base_path = get_game_dir();
+    let passed_input_path = lua.check_string(1);
+    let input_path = {
+        let root_path = Path::new(&base_path);
+        let local_path = Path::new(passed_input_path.as_ref());
+        root_path.join(local_path)
+    };
+
+    let output_path ;
+    let mut delete_original = false;
+    match lua.get_type(2) {
+        "string" => {
+            let passed_output_path = lua.check_string(2);
+            output_path = Some({
+                let root_path = Path::new(&base_path);
+                let local_path = Path::new(passed_output_path.as_ref());
+                root_path.join(local_path)
+            });
+
+            if lua.get_top() >= 3 && lua.get_type(3) == "boolean" {
+                delete_original = lua.check_boolean(3);
+            }
+        },
+        "boolean" => {
+            delete_original = lua.check_boolean(2);
+            output_path = None
+        },
+        _ => output_path = None
+    };
+
+    if let Err(e) = unzip_archive(&input_path, output_path, delete_original) {
+        lua.error(&format!("{}", e));
+    }
+
+    0
+}
+
 #[gmod13_open]
 unsafe fn gmod13_open(lua: gmod::lua::State) -> i32 {
     lua.new_table();
     lua.push_function(zip);
     lua.set_global(lua_string!("Zip"));
+    lua.push_function(unzip);
+    lua.set_global(lua_string!("Unzip"));
 
     0
 }
