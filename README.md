@@ -55,6 +55,17 @@ local lua_files = get_lua_files()
 Zip("my_lua_files.zip", lua_files)
 ```
 
+Extracting an archive:
+```lua
+require("zip")
+
+Unzip("archive.zip") -- this will extract the arvhive in the same directory
+Unzip("archive.zip", "addons/extracted_archive") -- this will extract the archive in GarrysMod/garrysmod/addon/extracted_archive
+
+Unzip("archive.zip", true) -- extracts and removes the original archive file
+Unzip("archive.zip", "addons/extracted_archive", true) -- extracts to passed path and removes the original archive file
+```
+
 ## Compiling
 - open a terminal
 - get [git](https://git-scm.com/downloads) or download the archive for the repository directly
