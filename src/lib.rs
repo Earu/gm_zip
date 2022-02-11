@@ -7,16 +7,14 @@ use glob::glob;
 #[macro_use] extern crate gmod;
 extern crate glob;
 
+static GMOD_PATH_FOLDER: &str = "steamapps/common/GarrysMod";
 fn get_game_dir() -> String {
     let exe_path = std::env::current_exe().unwrap();
-    let mut path = exe_path.parent().unwrap();
-    if path.to_str().unwrap().ends_with("win64") { // if its in win64 folder get back one more folder
-        path = path.parent().unwrap();
-    }
+    let str_path = String::from(exe_path.as_os_str().to_str().unwrap()).replace("\\", "/");
+    let index = str_path.find(GMOD_PATH_FOLDER).unwrap();
 
-    path = path.parent().unwrap(); // remove the bin folder
-    let mut path_str = String::from(path.to_str().unwrap());
-    path_str.push_str("\\garrysmod\\");
+    let mut path_str = String::from(&str_path[0..index + &GMOD_PATH_FOLDER.len()]);
+    path_str.push_str("/garrysmod/");
     path_str.replace("\\", "/")
 }
 
@@ -63,7 +61,8 @@ fn archive_folder(output: PathBuf, folder_path: PathBuf, delete_original: bool) 
     }
 
     if !folder_path.exists() {
-        return Err(Error::new(ErrorKind::NotFound, "folder not found"));
+        let err = format!("folder not found: {}", folder_path.to_str().unwrap());
+        return Err(Error::new(ErrorKind::NotFound, err));
     }
 
     let mut paths: Vec<ArchiveFile> = Vec::new();
@@ -77,25 +76,31 @@ fn archive_folder(output: PathBuf, folder_path: PathBuf, delete_original: bool) 
         root_path
     };
 
-    for e in glob(pattern.as_str()).expect("Failed to read glob pattern") {
-        let archive_path =  e.as_ref().unwrap().strip_prefix(folder_path.to_str().unwrap()).unwrap().to_str().unwrap();
-        paths.push(ArchiveFile {
-            actual_path: PathBuf::from(e.as_ref().unwrap()),
-            archive_path: archive_path
-                .replace("\\", "/")
-                .replace(".lua.txt", ".lua"), // we all know what that means
-        });
-    }
+    match glob(pattern.as_str())
+    {
+        Ok(iter) => {
+            for e in iter {
+                let archive_path =  e.as_ref().unwrap().strip_prefix(folder_path.to_str().unwrap()).unwrap().to_str().unwrap();
+                paths.push(ArchiveFile {
+                    actual_path: PathBuf::from(e.as_ref().unwrap()),
+                    archive_path: archive_path
+                        .replace("\\", "/")
+                        .replace(".lua.txt", ".lua"), // we all know what that means
+                });
+            }
 
-    match archive_files(output, &paths) {
-        Ok(_) => {
-            if delete_original {
-                std::fs::remove_dir_all(folder_path)
-            } else {
-                Ok(())
+            match archive_files(output, &paths) {
+                Ok(_) => {
+                    if delete_original {
+                        std::fs::remove_dir_all(folder_path)
+                    } else {
+                        Ok(())
+                    }
+                },
+                Err(e) => Err(e)
             }
         },
-        Err(e) => Err(e)
+        Err(e) => Err(Error::new(ErrorKind::Other, e)),
     }
 }
 
